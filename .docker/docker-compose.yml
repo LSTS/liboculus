@@ -3,6 +3,7 @@
 version: "3.9"
 services:
   ci:
+    network_mode: host
     build:
       dockerfile: Dockerfile
       target: ci
