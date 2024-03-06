@@ -78,8 +78,14 @@ int main(int argc, char **argv) {
   //                "contents rather than contacting \"real\" sonar on
   //                network.");
 
+  bool freqHigh = false;
+  app.add_flag("-i, --high", freqHigh, "Use high freq instead of low");
+  
   int bitDepth(8);
-  app.add_option("-b,--bits", bitDepth, "Bit depth oof data (8,16,32)");
+  app.add_option("-b,--bits", bitDepth, "Bit depth of data (8,16,32)");
+
+  int pingRate(0);
+  app.add_option("-p,--pr", pingRate, "Ping rate (max ping rate) (0=10Hz,1=15Hz,2=40Hz,3=5Hz,4=2Hz,5=disable)");
 
   int stopAfter = -1;
   app.add_option("-n,--frames", stopAfter, "Stop after (n) frames.");
@@ -90,12 +96,23 @@ int main(int argc, char **argv) {
   float gain = 50;
   app.add_option("-g, --gain", gain, "Gain as a percentage (1-100)");
 
+  bool nbeams512 = false;
+  app.add_flag("--nb512", nbeams512, "Use beams 512 instead of 256");
+
+  int gamma(127);
+  app.add_option("--gamma", gamma, "Gama correction default 127 (1-255)");
+
   CLI11_PARSE(app, argc, argv);
 
   if (verbosity == 1) {
     logger.setLevel(INFO);
   } else if (verbosity > 1) {
     logger.setLevel(DEBUG);
+  }
+
+  if ((pingRate < 0) || (pingRate >5)) {
+    LOG(FATAL) << "Invalid ping rate " << pingRate;
+    exit(-1);
   }
 
   if ((bitDepth != 8) && (bitDepth != 16) && (bitDepth != 32)) {
@@ -106,6 +123,11 @@ int main(int argc, char **argv) {
   if ((gain < 1) || (gain > 100)) {
     LOG(FATAL) << "Invalid gain " << gain
                << "; should be in the range of 1-100";
+  }
+
+  if ((gamma <= 0) || (gamma > 255)) {
+    LOG(FATAL) << "Invalid gamma " << gain
+               << "; should be in the range of 1-255";
   }
 
   ofstream output;
@@ -135,11 +157,33 @@ int main(int argc, char **argv) {
   SonarConfiguration config;
   config.setPingRate(pingRateNormal);
 
+  if (freqHigh) {
+    LOG(INFO) << "Setting use high freq";
+    config.setFreqMode(liboculus::OculusFreqMode::OCULUS_HIGH_FREQ);
+  } else {
+    LOG(INFO) << "Setting use low freq";
+    config.setFreqMode(liboculus::OculusFreqMode::OCULUS_LOW_FREQ);
+  }
+  
+  if (nbeams512) {
+    LOG(INFO) << "Setting use 512 beams";
+    config.use512Beams();
+  } else {
+    LOG(INFO) << "Setting use 256 beams";
+    config.use256Beams();
+  }
+  
+  LOG(INFO) << "Setting ping rate to " << pingRate;
+  config.setPingRate(static_cast<PingRateType>(pingRate));
+
   LOG(INFO) << "Setting range to " << range;
   config.setRange(range);
 
   LOG(INFO) << "Setting gain to " << gain;
   config.setGainPercent(gain).noGainAssistance();
+
+  LOG(INFO) << "Setting gamma to " << gamma;
+  config.setGamma(gamma);
 
   if (bitDepth == 8) {
     config.setDataSize(dataSize8Bit);
@@ -162,7 +206,7 @@ int main(int argc, char **argv) {
         {
           const auto valid = checkPingAgreesWithConfig(ping, config);
           if (!valid) {
-            LOG(WARNING) << "Mismatch between requested config and ping";
+            LOG(WARNING) << "V1 Mismatch between requested config and ping";
           }
         }
 
@@ -174,7 +218,7 @@ int main(int argc, char **argv) {
           output.write(cdata, ping.buffer()->size());
         }
 
-        LOG(DEBUG) << "Average intensity: "
+        LOG(DEBUG) << "V1 Average intensity: "
                    << mean_image_intensity(ping.image());
 
         count++;
@@ -190,7 +234,7 @@ int main(int argc, char **argv) {
         {
           const auto valid = checkPingAgreesWithConfig(ping, config);
           if (!valid) {
-            LOG(WARNING) << "Mismatch between requested config and ping";
+            LOG(WARNING) << "V2 Mismatch between requested config and ping";
           }
         }
 
@@ -202,7 +246,7 @@ int main(int argc, char **argv) {
           output.write(cdata, ping.buffer()->size());
         }
 
-        LOG(DEBUG) << "Average intensity: "
+        LOG(DEBUG) << "v2 Average intensity: "
                    << mean_image_intensity(ping.image());
 
         count++;

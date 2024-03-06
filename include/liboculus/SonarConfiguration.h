@@ -52,7 +52,13 @@ class SonarConfiguration {
 
   // Setter functions
   SonarConfiguration &setGamma(int input);
+  int getGamma() const {
+    return _sfm.gammaCorrection;
+  }
   SonarConfiguration &setPingRate(PingRateType newRate);
+  PingRateType getPingRate() const {
+    return _sfm.pingRate;
+  }
   SonarConfiguration &setGainPercent(double input);
   SonarConfiguration &setFlags(uint8_t flags);
   SonarConfiguration &setWaterTemperature(double degC);

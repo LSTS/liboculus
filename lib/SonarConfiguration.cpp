@@ -215,12 +215,15 @@ void SonarConfiguration::dump() const {
             << std::setfill('0') << static_cast<unsigned int>(_sfm.flags)
             << std::setw(8) << "\n            Ext flags 0x" << std::setw(8)
             << static_cast<uint32_t>(_sfm.extFlags) << std::dec << std::setw(0)
+            << "\n             freq mode " << getFreqMode() << " " << FreqModeToString(getFreqMode())
+            << "\n             ping rate " << getPingRate() //<< " " << PingRateToHz(getPingRate))
             << "\n  send range is meters " << getSendRangeAsMeters()
             << "\n       data size       " << DataSizeToString(getDataSize())
             << "\n       send gain       " << getSendGain()
             << "\n       simple return   " << getSimpleReturn()
             << "\n       gain assistance " << getGainAssistance()
-            << "\n       use 512 beams   " << get512Beams();
+            << "\n       use 512 beams   " << get512Beams()
+            << "\n       gamma           " << getGamma() / 255.0;
 }
 
 }  // namespace liboculus
