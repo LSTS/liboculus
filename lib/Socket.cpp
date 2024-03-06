@@ -113,13 +113,17 @@ Socket* Socket::accept(){
     struct sockaddr_storage their_addr;
     socklen_t addr_size;
     addr_size = sizeof their_addr;
+    cout << "accepting " <<  endl;
     int newsock = ::accept(sock, (struct sockaddr *)&their_addr, &addr_size);
     if (newsock < 0) {
         //exit(1);
         cerr << "accept error: " << gai_strerror(errno) << endl;
     }
+    cout << "accept: " << sock << endl;
     Socket *newSocket = new Socket(address_info.ai_family,address_info.ai_socktype,address_info.ai_protocol);
+    cout << "accept: x1" << endl;
     newSocket->sock = newsock;
+    cout << "accept: x2" << endl;
     newSocket->port = port;
     
     char host[NI_MAXHOST];

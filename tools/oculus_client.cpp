@@ -154,7 +154,9 @@ int main(int argc, char **argv) {
 
   int on = 1;
   // tcpSocket->socket_set_opt(SOL_SOCKET, SO_REUSEADDR, &on);
+  LOG(INFO) << "Waiting for connection on " << "127.0.0.1:9215";
   tcpSocket->bind("127.0.0.1", "9215");
+  LOG(WARNING) << "Listen " << outputFilename;
   tcpSocket->listen(10);
 
   LOG(WARNING) << "Enter " << outputFilename;
@@ -173,13 +175,14 @@ int main(int argc, char **argv) {
   LOG(WARNING) << "Exit " << outputFilename;
   Socket *newTcpSocket = tcpSocket->accept();
 
-
+  LOG(WARNING) << "Starting " << outputFilename;
+  
 
   int count = 0;
 
   signal(SIGHUP, signalHandler);
 
-  LOG(DEBUG) << "Starting loop";
+  LOG(WARNING) << "Starting loop";
 
   SonarConfiguration config;
   config.setPingRate(pingRateNormal);
@@ -220,9 +223,14 @@ int main(int argc, char **argv) {
     config.sendGain().setDataSize(dataSize32Bit);
   }
 
+  
+  LOG(INFO) << "Prep 1";
+  
   _io_thread.reset(new IoServiceThread);
   DataRx _data_rx(_io_thread->context());
-  StatusRx _status_rx(_io_thread->context());
+  //StatusRx _status_rx(_io_thread->context());
+  LOG(INFO) << "Prep 2";
+
 
   // Callback for a SimplePingResultV1
   _data_rx.setCallback<liboculus::SimplePingResultV1>(
@@ -290,14 +298,16 @@ int main(int argc, char **argv) {
     _data_rx.sendSimpleFireMessage(config);
   });
 
+  LOG(INFO) << "Prep to received pings";
+
   // Connect the client
   if (ipAddr == "auto") {
     // To autoconnect, define a callback for the _status_rx which
     // connects _data_rx to the received IP address
-    _status_rx.setCallback([&](const SonarStatus &status, bool is_valid) {
-      if (!is_valid || _data_rx.isConnected()) return;
-      _data_rx.connect(status.ipAddr());
-    });
+    //_status_rx.setCallback([&](const SonarStatus &status, bool is_valid) {
+    //  if (!is_valid || _data_rx.isConnected()) return;
+    //  _data_rx.connect(status.ipAddr());
+    //});
   } else {
     // Otherwise, just (attempt to) connect the DataRx to the specified IP
     // address
