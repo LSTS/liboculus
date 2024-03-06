@@ -16,6 +16,7 @@ using std::string;
 #include "liboculus/PingAgreesWithConfig.h"
 #include "liboculus/SonarPlayer.h"
 #include "liboculus/StatusRx.h"
+#include "liboculus/Socket.h"
 
 using std::ios_base;
 using std::ofstream;
@@ -148,6 +149,32 @@ int main(int argc, char **argv) {
   //   return 0;
   // }
 
+  // Setup socket for exporting data
+  Socket *tcpSocket = new Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+  int on = 1;
+  // tcpSocket->socket_set_opt(SOL_SOCKET, SO_REUSEADDR, &on);
+  tcpSocket->bind("127.0.0.1", "9215");
+  tcpSocket->listen(10);
+
+  LOG(WARNING) << "Enter " << outputFilename;
+  while (true) {
+      vector<Socket> reads(1);
+      reads[0] = *tcpSocket;
+      int seconds = 10; //Wait 10 seconds for incoming Connections
+      if(Socket::select(&reads, NULL, NULL, seconds) < 1){ 
+          //No new Connection
+          continue;
+      }else{
+          //Something happens, let's accept the connection
+          break;
+      }
+  }
+  LOG(WARNING) << "Exit " << outputFilename;
+  Socket *newTcpSocket = tcpSocket->accept();
+
+
+
   int count = 0;
 
   signal(SIGHUP, signalHandler);
@@ -212,9 +239,11 @@ int main(int argc, char **argv) {
 
         ping.dump();
 
+        const char *cdata =
+            reinterpret_cast<const char *>(ping.buffer()->data());
+        newTcpSocket->socket_write(cdata, ping.buffer()->size());
+
         if (output.is_open()) {
-          const char *cdata =
-              reinterpret_cast<const char *>(ping.buffer()->data());
           output.write(cdata, ping.buffer()->size());
         }
 
@@ -240,9 +269,11 @@ int main(int argc, char **argv) {
 
         ping.dump();
 
+        const char *cdata =
+            reinterpret_cast<const char *>(ping.buffer()->data());
+        newTcpSocket->socket_write(cdata, ping.buffer()->size());
+
         if (output.is_open()) {
-          const char *cdata =
-              reinterpret_cast<const char *>(ping.buffer()->data());
           output.write(cdata, ping.buffer()->size());
         }
 
